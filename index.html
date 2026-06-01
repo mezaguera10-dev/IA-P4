@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Music App</title>
+
+<style>
+/* ===================== GLOBAL ===================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  background: #0f0f0f;
+  color: white;
+  transition: 0.3s;
+}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+  width: 220px;
+  background: #181818;
+  padding: 20px;
+  height: 100vh;
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar ul li {
+  padding: 10px 0;
+  color: #aaa;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.sidebar ul li:hover {
+  color: white;
+}
+
+/* ===================== MAIN ===================== */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+header input {
+  width: 80%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+}
+
+header button {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  padding: 30px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.hero button {
+  margin-top: 10px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.card {
+  background: #1e1e1e;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* ===================== PLAYER ===================== */
+.player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #181818;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.player img {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+}
+
+.player button {
+  margin-left: auto;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* ===================== LIGHT MODE ===================== */
+body.light {
+  background: #f5f5f5;
+  color: #111;
+}
+
+body.light .sidebar {
+  background: #ffffff;
+}
+
+body.light .card {
+  background: #eaeaea;
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  header input {
+    width: 70%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>🎵 Music</h2>
+  <ul>
+    <li>Accueil</li>
+    <li>Explorer</li>
+    <li>Artistes</li>
+    <li>Albums</li>
+    <li>Favoris</li>
+  </ul>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HEADER -->
+  <header>
+    <input id="searchInput" type="text" placeholder="Rechercher une musique..."/>
+    <button id="themeToggle">🌙</button>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Découvrez la musique</h1>
+    <p>Recherchez et écoutez vos morceaux préférés</p>
+    <button>Écouter maintenant</button>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="grid"></section>
+</div>
+
+<!-- PLAYER -->
+<div class="player">
+  <img id="cover" />
+  <div>
+    <h4 id="title">Aucune musique</h4>
+    <p id="artist"></p>
+  </div>
+
+  <button id="playBtn">▶</button>
+  <audio id="audio"></audio>
+</div>
+
+<script>
+const searchInput = document.getElementById("searchInput");
+const results = document.getElementById("results");
+
+const audio = document.getElementById("audio");
+const playBtn = document.getElementById("playBtn");
+
+const title = document.getElementById("title");
+const artist = document.getElementById("artist");
+const cover = document.getElementById("cover");
+
+let currentTrack = null;
+
+/* SEARCH */
+searchInput.addEventListener("input", async () => {
+  const query = searchInput.value;
+  if (query.length < 2) return;
+
+  try {
+    const res = await fetch(`https://api.deezer.com/search?q=${query}`);
+    const data = await res.json();
+    displayMusic(data.data);
+  } catch (err) {
+    console.log("Erreur API");
+  }
+});
+
+/* DISPLAY */
+function displayMusic(tracks) {
+  results.innerHTML = "";
+
+  tracks.forEach(track => {
+    const card = document.createElement("div");
+    card.classList.add("card");
+
+    card.innerHTML = `
+      <img src="${track.album.cover_medium}" />
+      <h4>${track.title}</h4>
+      <p>${track.artist.name}</p>
+    `;
+
+    card.addEventListener("click", () => playMusic(track));
+
+    results.appendChild(card);
+  });
+}
+
+/* PLAY MUSIC */
+function playMusic(track) {
+  currentTrack = track;
+
+  audio.src = track.preview;
+  audio.play();
+
+  title.textContent = track.title;
+  artist.textContent = track.artist.name;
+  cover.src = track.album.cover_medium;
+
+  playBtn.textContent = "⏸";
+}
+
+/* PLAY / PAUSE */
+playBtn.addEventListener("click", () => {
+  if (!audio.src) return;
+
+  if (audio.paused) {
+    audio.play();
+    playBtn.textContent = "⏸";
+  } else {
+    audio.pause();
+    playBtn.textContent = "▶";
+  }
+});
+
+/* THEME TOGGLE */
+document.getElementById("themeToggle").addEventListener("click", () => {
+  document.body.classList.toggle("light");
+});
+</script>
+
+</body>
+</html>
